@@ -1,0 +1,260 @@
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class Main extends JFrame implements ActionListener {
+    private static final int PIN = 1234;
+    private double balance = 1000.00;
+
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
+
+    private JTextField user_id;
+    private JTextField pinField;
+    private JLabel balanceLabel;
+    private JTextField depositField;
+    private JTextField withdrawField;
+
+    //private static final String DB_URL = "jdbc:mysql://localhost:3306/atm";
+    //private static final String DB_USER = "root";
+    //private static final String DB_PASS = "1234";
+
+    public Main () {
+        setTitle("ATM Machine");
+        setSize(400, 300);
+        setResizable(false);
+        getContentPane().setBackground(new Color(234, 20, 255));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+
+        mainPanel.add(createLoginPanel(), "Login");
+        mainPanel.add(createMenuPanel(), "Menu");
+        mainPanel.add(createdepositPanel(), "deposit");
+        mainPanel.add(createwithdrawPanel(), "withdraw");
+        mainPanel.add(createsignupPanel(), "signup");
+
+        add(mainPanel);
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+// connection b/w mysql and java
+    private Connection connectToDatabase() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection("jdbc:mysql://localhost:3306/atm", "root","1234");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Database connection failed: " + e.getMessage());
+            return null;
+        }
+    }
+// update my sql with query
+    private void logTransaction(String type, double amount, double currentBalance) {
+        String sql = "INSERT INTO transaction_history (type, amount, balance) VALUES (?, ?, ?)";
+        try (Connection conn = connectToDatabase(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, type);
+            stmt.setDouble(2, amount);
+            stmt.setDouble(3, currentBalance);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Failed to log transaction: " + e.getMessage());
+        }
+    }
+//login pannel
+private JPanel createLoginPanel() {
+    JPanel panel = new JPanel();
+    panel.setLayout(new GridLayout(4, 2, 10, 10)); // Optional spacing between components
+
+    JLabel welcomeLabel = new JLabel("Welcome", SwingConstants.CENTER);
+    welcomeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+
+    // Empty label to center welcome label across the top row
+    panel.add(welcomeLabel);
+    panel.add(new JLabel()); // filler to align in GridLayout
+
+    JLabel userIdLabel = new JLabel("USER ID:");
+    user_id = new JTextField();
+    panel.add(userIdLabel);
+    panel.add(user_id);
+
+    JLabel pinLabel = new JLabel("Enter PIN:");
+    pinField = new JTextField();
+    panel.add(pinLabel);
+    panel.add(pinField);
+
+    JButton loginBtn = new JButton("Login");
+    loginBtn.setFont(new Font("Calibri", Font.BOLD, 20));
+    loginBtn.setBackground(Color.GREEN);
+    loginBtn.addActionListener(this);
+
+    JButton signupBtn = new JButton("Signup");
+    signupBtn.addActionListener(this);
+
+    panel.add(loginBtn);
+    panel.add(signupBtn);
+
+    return panel;
+    }
+//main pannel
+    private JPanel createMenuPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(5, 2, 10, 10));
+        balanceLabel = new JLabel("Balance: $1000.00");
+        JButton depositBtn = new JButton("Deposit");
+        JButton withdrawBtn = new JButton("Withdraw");
+        JButton checkBalanceBtn = new JButton("Check Balance");
+        JButton exitBtn = new JButton("Exit");
+        exitBtn.setBackground(Color.RED);
+
+        depositBtn.addActionListener(this);
+        withdrawBtn.addActionListener(this);
+        checkBalanceBtn.addActionListener(this);
+        exitBtn.addActionListener(this);
+
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        panel.add(depositBtn);
+        panel.add(withdrawBtn);
+        panel.add(checkBalanceBtn);
+        panel.add(balanceLabel);
+        panel.add(exitBtn);
+
+        return panel;
+    }
+//deposit pannel
+    private JPanel createdepositPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(4, 1, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        depositField = new JTextField();
+        JButton submitBtn = new JButton("Submit");
+        JButton backBtn = new JButton("Back to Menu");
+
+        submitBtn.addActionListener(this);
+        backBtn.addActionListener(this);
+
+        panel.add(new JLabel("Deposit Amount:"));
+        panel.add(depositField);
+        panel.add(submitBtn);
+        panel.add(backBtn);
+
+        return panel;
+    }
+//withdraw pannel
+    private JPanel createwithdrawPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(4, 1, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        withdrawField = new JTextField();
+        JButton submitBtn = new JButton("ENTER");
+        submitBtn.setActionCommand("ENTER");
+        JButton backBtn = new JButton("Main Menu");
+        backBtn.setActionCommand("Main Menu");
+
+        submitBtn.addActionListener(this);
+        backBtn.addActionListener(this);
+
+        panel.add(new JLabel("Withdraw Amount:"));
+        panel.add(withdrawField);
+        panel.add(submitBtn);
+        panel.add(backBtn);
+
+        return panel;
+    }
+    private JPanel createsignupPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(4, 1, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    return panel;
+    }
+// switch case for buttons
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String cmd = e.getActionCommand();
+        switch (cmd) {
+            case "Login":
+                try {
+                    int enteredPin = Integer.parseInt(pinField.getText());
+                    if (enteredPin == PIN) {
+                        cardLayout.show(mainPanel, "Menu");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Invalid PIN!");
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Enter a valid number.");
+                }
+                break;
+
+            case "Deposit":
+                cardLayout.show(mainPanel, "deposit");
+                break;
+
+            case "Submit":
+                try {
+                    double amount = Double.parseDouble(depositField.getText());
+                    if (amount > 0) {
+                        balance += amount;
+                        logTransaction("Deposit", amount, balance);
+                        JOptionPane.showMessageDialog(this, "Deposited $" + amount);
+                        depositField.setText("");
+                        balanceLabel.setText(String.format("Balance: $%.2f", balance));
+                        cardLayout.show(mainPanel, "Menu");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Enter a positive amount.");
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid input.");
+                }
+                break;
+
+            case "Back to Menu":
+                cardLayout.show(mainPanel, "Menu");
+                break;
+
+            case "Withdraw":
+                cardLayout.show(mainPanel, "withdraw");
+                break;
+
+            case "ENTER":
+                try {
+                    double amount = Double.parseDouble(withdrawField.getText());
+                    if (amount > 0 && amount <= balance) {
+                        balance -= amount;
+                        logTransaction("Withdraw", amount, balance);
+                        JOptionPane.showMessageDialog(this, "Withdrew $" + amount);
+                        withdrawField.setText("");
+                        balanceLabel.setText(String.format("Balance: $%.2f", balance));
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Insufficient funds or invalid amount.");
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid input.");
+                }
+                break;
+
+            case "Main Menu":
+                cardLayout.show(mainPanel, "Menu");
+                break;
+
+            case "Check Balance":
+                balanceLabel.setText(String.format("Balance: $%.2f", balance));
+                break;
+            case "signup":
+                cardLayout.show(mainPanel, "signup");
+                break;
+            case "Exit":
+                System.exit(0);
+                break;
+        }
+    }
+// main class
+    public static void main(String[] args) {
+        new Main();
+    }
+}
+
